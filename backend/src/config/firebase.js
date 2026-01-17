@@ -1,28 +1,25 @@
 const admin = require("firebase-admin");
+const path = require("path");
 
-let firebaseAppInitialized = false;
+let serviceAccount;
 
 try {
-  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
-    console.error("❌ FIREBASE_SERVICE_ACCOUNT env variable not set");
-  } else {
-    const serviceAccount = JSON.parse(
-      process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\\n/g, "\n")
-    );
+  const serviceAccountPath =
+    process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
+    path.resolve(__dirname, "../../firebase-service-account.json");
 
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      storageBucket: "file-storage-d4382.firebasestorage.app"
-    });
-
-    firebaseAppInitialized = true;
-    console.log("✅ Firebase Admin initialized");
-  }
+  serviceAccount = require(path.resolve(serviceAccountPath));
 } catch (err) {
-  console.error("❌ Firebase initialization failed:", err.message);
+  console.error("❌ Firebase service account file not found or invalid path");
+  throw err;
 }
 
-const db = firebaseAppInitialized ? admin.firestore() : null;
-const bucket = firebaseAppInitialized ? admin.storage().bucket() : null;
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket: "file-storage-d4382.firebasestorage.app"
+});
 
-module.exports = { admin: firebaseAppInitialized ? admin : null, db, bucket };
+const db = admin.firestore();
+const bucket = admin.storage().bucket();
+
+module.exports = { admin, db, bucket };
