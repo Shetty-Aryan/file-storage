@@ -12,18 +12,17 @@ const app = express();
 app.set("trust proxy", 1);
 
 /**
- * SINGLE CORS MIDDLEWARE (Express v5 SAFE)
+ * SINGLE, CORRECT CORS CONFIG
  */
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
-  "https://file-storage-cju807os4-shetty-aryans-projects.vercel.app"
+  "https://file-storage-h1asay66u-shetty-aryans-projects.vercel.app"
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // allow server-to-server / Postman / health checks
-    if (!origin) return callback(null, true);
+    if (!origin) return callback(null, true); // Postman / Render
 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
@@ -37,9 +36,7 @@ app.use(cors({
 }));
 
 /**
- * IMPORTANT:
- * This line lets Express answer OPTIONS automatically
- * DO NOT add app.options("*")
+ * Express will auto-handle OPTIONS
  */
 app.use(express.json());
 
