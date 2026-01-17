@@ -1,20 +1,28 @@
 const admin = require("firebase-admin");
 
+let firebaseAppInitialized = false;
 
-if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
-  throw new Error("FIREBASE_SERVICE_ACCOUNT env variable not set");
+try {
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+    console.error("❌ FIREBASE_SERVICE_ACCOUNT env variable not set");
+  } else {
+    const serviceAccount = JSON.parse(
+      process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\\n/g, "\n")
+    );
+
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      storageBucket: "file-storage-d4382.firebasestorage.app"
+    });
+
+    firebaseAppInitialized = true;
+    console.log("✅ Firebase Admin initialized");
+  }
+} catch (err) {
+  console.error("❌ Firebase initialization failed:", err.message);
 }
 
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+const db = firebaseAppInitialized ? admin.firestore() : null;
+const bucket = firebaseAppInitialized ? admin.storage().bucket() : null;
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: "file-storage-d4382.firebasestorage.app"
-});
-
-
-
-const db = admin.firestore();
-const bucket = admin.storage().bucket();
-
-module.exports = { admin, db, bucket };
+module.exports = { admin: firebaseAppInitialized ? admin : null, db, bucket };
