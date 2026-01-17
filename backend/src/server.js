@@ -7,23 +7,21 @@ const fileRoutes = require("./routes/file.routes");
 const app = express();
 
 /**
- * REQUIRED for Render
+ * Required for Render
  */
 app.set("trust proxy", 1);
 
 /**
- * 🚀 ALLOW EVERYTHING (NO CORS PAIN)
+ * ✅ Allow ALL origins (safe for dev/demo)
+ * ✅ Express v5 compatible
+ * ✅ Handles OPTIONS automatically
  */
 app.use(cors({
-  origin: "*",
+  origin: true, // reflect request origin
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: false
 }));
-
-/**
- * IMPORTANT: handle preflight explicitly
- */
-app.options("*", cors());
 
 app.use(express.json());
 
