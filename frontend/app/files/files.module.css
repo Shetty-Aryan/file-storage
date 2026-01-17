@@ -1,0 +1,100 @@
+.container {
+  padding: 16px;
+}
+
+.title {
+  font-size: 22px;
+  margin-bottom: 16px;
+}
+
+.error {
+  color: red;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 10px;
+  border-bottom: 1px solid #444;
+  text-align: left;
+}
+
+/* 🔹 Mobile cards */
+.cards {
+  display: none;
+}
+
+.card {
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.cardName {
+  font-weight: bold;
+  margin-bottom: 6px;
+  word-break: break-word;
+}
+
+.cardMeta {
+  font-size: 13px;
+  color: #aaa;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.download {
+  background: #2563eb;
+  color: white;
+}
+
+.delete {
+  background: #dc2626;
+  color: white;
+}
+
+/* 📱 Responsive switch */
+@media (max-width: 768px) {
+  .tableWrapper {
+    display: none;
+  }
+
+  .cards {
+    display: block;
+  }
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  .tableWrapper {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) {
+  .cards {
+    display: none;
+  }
+}
