@@ -7,37 +7,24 @@ const fileRoutes = require("./routes/file.routes");
 const app = express();
 
 /**
- * REQUIRED for Render + rate-limit
+ * REQUIRED for Render
  */
 app.set("trust proxy", 1);
 
 /**
- * SINGLE, CORRECT CORS CONFIG
+ * 🚀 ALLOW EVERYTHING (NO CORS PAIN)
  */
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "https://file-storage-h1asay66u-shetty-aryans-projects.vercel.app"
-];
-
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // Postman / Render
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    return callback(null, false);
-  },
-  credentials: true,
+  origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 /**
- * Express will auto-handle OPTIONS
+ * IMPORTANT: handle preflight explicitly
  */
+app.options("*", cors());
+
 app.use(express.json());
 
 app.use("/backend/files", fileRoutes);
