@@ -6,40 +6,44 @@ const fileRoutes = require("./routes/file.routes");
 
 const app = express();
 
+/**
+ * REQUIRED for Render + express-rate-limit
+ */
 app.set("trust proxy", 1);
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // allow server-to-server / Postman / Render
-    if (!origin) return callback(null, true);
+/**
+ * CORS – credentials ENABLED
+ */
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://file-storage-61w01c1ov-shetty-aryans-projects.vercel.app"
+      ];
 
-    // localhost (dev)
-    if (origin.startsWith("http://localhost")) {
-      return callback(null, true);
-    }
+      // allow Postman / server-to-server / Render health checks
+      if (!origin) return callback(null, true);
 
-    // ALL vercel deployments
-    if (origin.endsWith(".vercel.app")) {
-      return callback(null, true);
-    }
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
 
-    // ❌ DO NOT ERROR — just deny silently
-    return callback(null, false);
-  },
-  credentials: true
-}));
-
-
+      return callback(new Error("Not allowed by CORS"));
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  })
+);
 
 /**
- * ✅ Express v5-safe preflight handler
+ * IMPORTANT: handle preflight correctly (Express v5 safe)
  */
 app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    cors(corsOptions)(req, res, next);
-  } else {
-    next();
-  }
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
 });
 
 app.use(express.json());

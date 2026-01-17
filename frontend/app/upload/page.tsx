@@ -6,44 +6,6 @@ import { useAuth } from "@/lib/useAuth";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 
-/* 🎨 UI STYLES */
-const card = {
-  maxWidth: 420,
-  margin: "60px auto",
-  padding: 24,
-  borderRadius: 12,
-  border: "1px solid #e5e7eb",
-  boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-  background: "#fff",
-};
-
-const button = {
-  padding: "10px 14px",
-  borderRadius: 6,
-  border: "none",
-  background: "#2563eb",
-  color: "#fff",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const backBtn = {
-  background: "none",
-  border: "none",
-  color: "#2563eb",
-  cursor: "pointer",
-  marginBottom: 12,
-  padding: 0,
-};
-
-const fileInput = {
-  width: "100%",
-  padding: 10,
-  border: "1px dashed #cbd5f5",
-  borderRadius: 8,
-  marginBottom: 16,
-};
-
 export default function UploadPage() {
   const { user, loading } = useAuth();
   const [file, setFile] = useState<File | null>(null);
@@ -51,7 +13,6 @@ export default function UploadPage() {
 
   const router = useRouter();
 
-  // ✅ Redirect if not logged in
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/login");
@@ -59,64 +20,60 @@ export default function UploadPage() {
   }, [user, loading, router]);
 
   async function handleUpload() {
-    if (!user || !file) return;
+    if (!file) {
+      setStatus("Choose a file");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
       setStatus("Uploading...");
-      const res = await apiFetch("/files/upload", {
+
+      const res = await apiFetch("/backend/files/upload", {
         method: "POST",
-        body: formData,
+        body: formData
       });
 
-      const data = await res.json();
-      setStatus(`Uploaded ✅ (${file.name})`);
-      setFile(null);
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err || "Upload failed");
+      }
+
+      setStatus("Upload successful ✅");
+      router.push("/files");
     } catch (err: any) {
-      setStatus(err.message);
+      setStatus(err.message || "Upload failed");
     }
   }
 
-  if (loading) {
-    return <p style={{ textAlign: "center" }}>Loading auth...</p>;
-  }
+  if (loading) return <p>Loading...</p>;
 
   return (
     <>
       <Navbar />
-
-      <div style={card}>
-        <button style={backBtn} onClick={() => router.push("/files")}>
+      <div style={{ padding: 20 }}>
+        <button onClick={() => router.push("/files")}>
           ← Back to Files
         </button>
 
-        <h2 style={{ marginBottom: 20 }}>Upload File</h2>
+        <h2>Upload File</h2>
 
         <input
-          style={fileInput}
           type="file"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          onChange={(e) =>
+            setFile(e.target.files?.[0] || null)
+          }
         />
 
-        <button
-          style={{
-            ...button,
-            width: "100%",
-            opacity: !file ? 0.6 : 1,
-          }}
-          disabled={!file}
-          onClick={handleUpload}
-        >
+        <br /><br />
+
+        <button onClick={handleUpload}>
           Upload
         </button>
 
-        {status && (
-          <p style={{ marginTop: 14, textAlign: "center" }}>
-            {status}
-          </p>
-        )}
+        <p>{status}</p>
       </div>
     </>
   );
