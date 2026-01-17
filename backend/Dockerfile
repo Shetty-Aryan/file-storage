@@ -1,22 +1,22 @@
-FROM node:18-slim
+FROM node:20-slim
 
 # Install ClamAV
 RUN apt-get update && \
     apt-get install -y clamav clamav-daemon && \
-    freshclam
+    rm -rf /var/lib/apt/lists/*
 
-# App directory
+# Update virus definitions
+RUN freshclam || true
+
+# Create app directory
 WORKDIR /app
 
-# Copy dependencies
+# Copy package files
 COPY package*.json ./
 RUN npm install --production
 
-# Copy app code
+# Copy source
 COPY . .
-
-# Create uploads folder
-RUN mkdir uploads
 
 # Expose port
 EXPOSE 3000

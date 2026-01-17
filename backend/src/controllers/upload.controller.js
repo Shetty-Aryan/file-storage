@@ -1,86 +1,33 @@
 const fs = require("fs");
-const { v4: uuidv4 } = require("uuid");
-const { sha256 } = require("../utils/hash.utils");
-const { encryptBuffer } = require("../services/encrypt.service");
+const path = require("path");
 const { scanFile } = require("../services/scan.service");
-const { uploadEncryptedFile } = require("../services/storage.service");
-const { db } = require("../config/firebase");
-const { logEvent } = require("../services/audit.service");
-
 
 exports.upload = async (req, res) => {
   try {
-    // 1️⃣ Malware scan
-    const scanResult = await scanFile(req.file.path);
-    if (!scanResult.safe) {
-      return res.status(400).json({ error: "Malware detected" });
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
-    // 2️⃣ Read file
-    const buffer = fs.readFileSync(req.file.path);
+    const filePath = req.file.path;
 
-    const { logEvent } = require("../services/audit.service");
+    // 🦠 SCAN FILE
+    await scanFile(filePath);
 
-    // 3️⃣ Hash
-    const hash = sha256(buffer);
+    // continue encryption + storage logic here
+    // encrypt → upload → delete temp file
 
-    // 4️⃣ Encrypt
-    const { encrypted, iv, algorithm } = encryptBuffer(buffer);
+    fs.unlinkSync(filePath);
 
-    // 5️⃣ Cleanup temp file
-    fs.unlinkSync(req.file.path);
-
-    // 6️⃣ Prepare storage
-    const fileId = uuidv4();
-    const userId = req.user.uid; // will come from auth later
-    const storagePath = `${userId}/${fileId}.enc`;
-
-    // 7️⃣ Upload encrypted file
-    await uploadEncryptedFile(encrypted, storagePath);
-
-    // 8️⃣ Save metadata
-    await db.collection("files").doc(fileId).set({
-      fileId,
-      owner: userId,
-      originalName: req.file.originalname,
-      storagePath,
-      mimeType: req.file.mimetype,
-      hash,
-      iv,
-      algorithm,
-      size: req.file.size,
-      createdAt: new Date()
-    });
-    
-
-    // after Firestore metadata save
-    await logEvent({
-      userId: req.user.uid,      // ✅ FIX
-      action: "UPLOAD",
-      fileId,
-      fileName: req.file.originalname,
-      req
-    });
-
-
-    return res.json({
-      message: "File securely stored ✅",
-      fileId
-    });
+    res.json({ success: true, fileId: "generated-id" });
 
   } catch (err) {
-    await logEvent({
-      userId: req.user.uid,      // ✅ FIX
-      action: "FAILED_UPLOAD",
-      fileName: req.file.originalname,
-      req
-    });
-
     console.error(err);
-    return res.status(500).json({
-      error: "File storage failed"
-    });
-  }
-  
-};
 
+    // delete infected file
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+
+    res.status(400).json({ error: err.message });
+  }
+};

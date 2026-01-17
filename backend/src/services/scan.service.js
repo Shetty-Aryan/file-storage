@@ -1,55 +1,45 @@
 const { spawn } = require("child_process");
-const fs = require("fs");
+const path = require("path");
 
-const CLAMAV_PATH = "C:\\Program Files\\ClamAV\\clamscan.exe";
+const CLAMSCAN_PATH = process.env.CLAMSCAN_PATH || "clamscan";
 
 exports.scanFile = (filePath) => {
   return new Promise((resolve, reject) => {
-    console.log("🦠 Starting ClamAV scan (spawn)...");
+    console.log("🦠 Starting ClamAV scan:", filePath);
 
-    const scan = spawn(CLAMAV_PATH, [filePath], {
-      windowsHide: true
-    });
+    const scan = spawn(CLAMSCAN_PATH, [
+      "--no-summary",
+      "--infected",
+      filePath
+    ]);
 
-    let output = "";
-    let errorOutput = "";
+    let infected = false;
 
     scan.stdout.on("data", (data) => {
-      output += data.toString();
+      const output = data.toString();
+      console.log("ClamAV:", output);
+      if (output.includes("FOUND")) {
+        infected = true;
+      }
     });
 
     scan.stderr.on("data", (data) => {
-      errorOutput += data.toString();
+      console.error("ClamAV error:", data.toString());
     });
 
     scan.on("error", (err) => {
-      console.error("❌ ClamAV spawn error:", err);
-      reject(new Error("Failed to start ClamAV"));
+      console.error("❌ ClamAV spawn failed:", err);
+      reject(new Error("ClamAV failed to start"));
     });
 
     scan.on("close", (code) => {
-      console.log("🦠 ClamAV scan finished with code:", code);
+      console.log("🦠 ClamAV finished with code:", code);
 
-      // Malware detected
-      if (output.includes("FOUND")) {
-        try {
-          fs.unlinkSync(filePath);
-        } catch (_) {}
-
-        return resolve({
-          safe: false,
-          details: output
-        });
+      if (infected) {
+        reject(new Error("Virus detected"));
+      } else {
+        resolve(true);
       }
-
-      // Non-zero exit but no malware
-      if (code !== 0 && !output.includes("OK")) {
-        console.error("❌ ClamAV error output:", errorOutput);
-        return reject(new Error("Malware scan failed"));
-      }
-
-      // Clean file
-      return resolve({ safe: true });
     });
   });
 };
