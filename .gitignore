@@ -1,0 +1,20 @@
+# node
+node_modules/
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+
+# env files
+.env
+.env.local
+
+# next
+.next/
+out/
+
+# build
+dist/
+build/
+
+# misc
+.DS_Store
