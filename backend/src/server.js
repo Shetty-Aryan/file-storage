@@ -6,14 +6,8 @@ const fileRoutes = require("./routes/file.routes");
 
 const app = express();
 
-/**
- * REQUIRED for Render + rate-limit
- */
 app.set("trust proxy", 1);
 
-/**
- * CORS (Express v5 compatible)
- */
 const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
@@ -22,7 +16,6 @@ const corsOptions = {
       "https://file-storage-61w01c1ov-shetty-aryans-projects.vercel.app"
     ];
 
-    // Allow Postman / server-to-server / health checks
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
@@ -36,12 +29,21 @@ const corsOptions = {
   credentials: true
 };
 
+/**
+ * CORS main middleware
+ */
 app.use(cors(corsOptions));
 
 /**
- * ✅ REQUIRED for browser preflight (Express v5)
+ * ✅ Express v5-safe preflight handler
  */
-app.options("/*", cors(corsOptions));
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    cors(corsOptions)(req, res, next);
+  } else {
+    next();
+  }
+});
 
 app.use(express.json());
 
