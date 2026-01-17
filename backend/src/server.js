@@ -14,7 +14,7 @@ app.set("trust proxy", 1);
 /**
  * CORS (Express v5 compatible)
  */
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
       "http://localhost:3000",
@@ -22,7 +22,7 @@ app.use(cors({
       "https://file-storage-61w01c1ov-shetty-aryans-projects.vercel.app"
     ];
 
-    // Allow Postman, server-to-server, Render health checks
+    // Allow Postman / server-to-server / health checks
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
@@ -34,13 +34,14 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
-}));
+};
+
+app.use(cors(corsOptions));
 
 /**
- * ✅ THIS replaces app.options("*", cors())
- * Works in Express v5
+ * ✅ REQUIRED for browser preflight (Express v5)
  */
-app.use(cors());
+app.options("/*", cors(corsOptions));
 
 app.use(express.json());
 
