@@ -7,7 +7,8 @@ const fileRoutes = require("./routes/file.routes");
 const app = express();
 
 app.use(cors({
-  origin: "http://localhost:3001", // Next.js dev server
+  origin:[ "http://localhost:3001",
+    "https://file-storage-bslog7owt-shetty-aryans-projects.vercel.app/"], // Next.js dev server
   credentials: true
 }));
 
