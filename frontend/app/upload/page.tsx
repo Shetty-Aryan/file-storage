@@ -31,7 +31,7 @@ export default function UploadPage() {
     try {
       setStatus("Uploading...");
 
-      const res = await apiFetch("/backend/files/upload", {
+      const res = await apiFetch("/files/upload", {
         method: "POST",
         body: formData
       });
