@@ -10,7 +10,7 @@ app.use(cors({
   origin: function (origin, callback) {
     const allowedOrigins = [
       "http://localhost:3001",
-      "https://file-storage-bslog7owt-shetty-aryans-projects.vercel.app"
+      "https://file-storage-61w01c1ov-shetty-aryans-projects.vercel.app"
     ];
 
     // allow server-to-server / Postman / Render health checks
