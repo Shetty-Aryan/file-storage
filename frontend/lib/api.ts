@@ -8,7 +8,7 @@ export async function apiFetch(
 
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
-    credentials: "include", // 🔥 REQUIRED
+     // 🔥 REQUIRED
     headers: {
       ...(options.headers || {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {})
