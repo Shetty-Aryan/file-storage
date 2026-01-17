@@ -7,45 +7,40 @@ const fileRoutes = require("./routes/file.routes");
 const app = express();
 
 /**
- * REQUIRED for Render + express-rate-limit
+ * REQUIRED for Render + rate-limit
  */
 app.set("trust proxy", 1);
 
 /**
- * CORS – credentials ENABLED
+ * SINGLE CORS MIDDLEWARE (Express v5 SAFE)
  */
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      const allowedOrigins = [
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "https://file-storage-61w01c1ov-shetty-aryans-projects.vercel.app"
-      ];
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://file-storage-cju807os4-shetty-aryans-projects.vercel.app"
+];
 
-      // allow Postman / server-to-server / Render health checks
-      if (!origin) return callback(null, true);
+app.use(cors({
+  origin: (origin, callback) => {
+    // allow server-to-server / Postman / health checks
+    if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-      return callback(new Error("Not allowed by CORS"));
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
-  })
-);
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 /**
- * IMPORTANT: handle preflight correctly (Express v5 safe)
+ * IMPORTANT:
+ * This line lets Express answer OPTIONS automatically
+ * DO NOT add app.options("*")
  */
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Credentials", "true");
-  next();
-});
-
 app.use(express.json());
 
 app.use("/backend/files", fileRoutes);
