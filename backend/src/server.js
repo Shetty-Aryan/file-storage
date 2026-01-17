@@ -8,27 +8,27 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow Postman, server-to-server, Render health checks
+app.use(cors({
+  origin: (origin, callback) => {
+    // allow server-to-server / Postman / Render
     if (!origin) return callback(null, true);
 
-    // Allow localhost (dev)
+    // localhost (dev)
     if (origin.startsWith("http://localhost")) {
       return callback(null, true);
     }
 
-    // Allow ALL Vercel deployments
+    // ALL vercel deployments
     if (origin.endsWith(".vercel.app")) {
       return callback(null, true);
     }
 
-    return callback(new Error("Not allowed by CORS"));
+    // ❌ DO NOT ERROR — just deny silently
+    return callback(null, false);
   },
   credentials: true
-};
+}));
 
-app.use(cors(corsOptions));
 
 
 /**
