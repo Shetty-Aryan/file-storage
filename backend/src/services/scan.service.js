@@ -1,54 +1,55 @@
 const { spawn } = require("child_process");
 const fs = require("fs");
 
-const CLAMSCAN_PATH = process.env.CLAMSCAN_PATH || "clamscan";
+const CLAMAV_PATH = "C:\\Program Files\\ClamAV\\clamscan.exe";
 
 exports.scanFile = (filePath) => {
   return new Promise((resolve, reject) => {
-    // ⛔ If file vanished (edge case)
-    if (!fs.existsSync(filePath)) {
-      return reject(new Error("File not found for scanning"));
-    }
+    console.log("🦠 Starting ClamAV scan (spawn)...");
 
-    console.log("🦠 Starting ClamAV scan:", filePath);
+    const scan = spawn(CLAMAV_PATH, [filePath], {
+      windowsHide: true
+    });
 
-    const scan = spawn(CLAMSCAN_PATH, [
-      "--no-summary",
-      "--infected",
-      filePath
-    ]);
+    let output = "";
+    let errorOutput = "";
 
-    let stderrOutput = "";
+    scan.stdout.on("data", (data) => {
+      output += data.toString();
+    });
 
     scan.stderr.on("data", (data) => {
-      stderrOutput += data.toString();
+      errorOutput += data.toString();
     });
 
     scan.on("error", (err) => {
-      console.error("❌ ClamAV spawn failed:", err.message);
-      reject(new Error("ClamAV not available in environment"));
+      console.error("❌ ClamAV spawn error:", err);
+      reject(new Error("Failed to start ClamAV"));
     });
 
     scan.on("close", (code) => {
-      console.log("🦠 ClamAV exited with code:", code);
+      console.log("🦠 ClamAV scan finished with code:", code);
 
-      /*
-        Exit codes:
-        0 → clean
-        1 → infected
-        2 → error
-      */
+      // Malware detected
+      if (output.includes("FOUND")) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (_) {}
 
-      if (code === 0) {
-        return resolve(true);
+        return resolve({
+          safe: false,
+          details: output
+        });
       }
 
-      if (code === 1) {
-        return reject(new Error("Virus detected"));
+      // Non-zero exit but no malware
+      if (code !== 0 && !output.includes("OK")) {
+        console.error("❌ ClamAV error output:", errorOutput);
+        return reject(new Error("Malware scan failed"));
       }
 
-      console.error("❌ ClamAV error output:", stderrOutput);
-      reject(new Error("ClamAV scan failed"));
+      // Clean file
+      return resolve({ safe: true });
     });
   });
 };

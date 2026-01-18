@@ -1,40 +1,40 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-
 const fileRoutes = require("./routes/file.routes");
 
 const app = express();
 
-/**
- * Required for Render / proxies
- */
-app.set("trust proxy", 1);
-
-/**
- * ✅ SIMPLE + SAFE CORS (NO credentials)
- * This works with Vercel, localhost, Postman, browser
- */
 app.use(cors({
-  origin: true, // allow all origins
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      "http://localhost:3001",
+      "https://file-storage-bslog7owt-shetty-aryans-projects.vercel.app"
+    ];
+
+    // allow server-to-server / Postman / Render health checks
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 }));
 
-/**
- * Body parser
- */
 app.use(express.json());
 
-/**
- * Routes
- * YES — /backend is REQUIRED (your frontend expects it)
- */
 app.use("/backend/files", fileRoutes);
 
-/**
- * Start server
- */
+/* ✅ health check (IMPORTANT for Render) */
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

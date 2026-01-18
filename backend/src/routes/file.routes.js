@@ -1,7 +1,7 @@
 const express = require("express");
 const upload = require("../middleware/upload.middleware");
 const validate = require("../middleware/fileValidation.middleware");
-// const magicCheck = require("../middleware/magicByte.middleware");
+const magicCheck = require("../middleware/magicByte.middleware");
 const auth = require("../middleware/auth.middleware");
 
 const uploadController = require("../controllers/upload.controller");
@@ -25,7 +25,7 @@ router.post(
   uploadLimiter,
   upload.single("file"),
   validate,
-  //magicCheck,
+  magicCheck,
   uploadController.upload
 );
 

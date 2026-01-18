@@ -1,19 +1,31 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { auth } from "./firebase";
 
 export async function apiFetch(
-  path: string,
+  endpoint: string,
   options: RequestInit = {}
 ) {
-  const token = localStorage.getItem("token");
+  const user = auth.currentUser;
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-     // 🔥 REQUIRED
-    headers: {
-      ...(options.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
+  let token = "";
+  if (user) {
+    token = await user.getIdToken(true); // 🔥 FORCE REFRESH
+  }
+
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`,
+    {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        Authorization: token ? `Bearer ${token}` : ""
+      }
     }
-  });
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text);
+  }
 
   return res;
 }

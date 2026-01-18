@@ -1,41 +1,85 @@
 const fs = require("fs");
-const path = require("path");
+const { v4: uuidv4 } = require("uuid");
+const { sha256 } = require("../utils/hash.utils");
+const { encryptBuffer } = require("../services/encrypt.service");
 const { scanFile } = require("../services/scan.service");
+const { uploadEncryptedFile } = require("../services/storage.service");
+const { db } = require("../config/firebase");
+const { logEvent } = require("../services/audit.service");
+
 
 exports.upload = async (req, res) => {
-  let filePath;
-
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
+    // 1️⃣ Malware scan
+    const scanResult = await scanFile(req.file.path);
+    if (!scanResult.safe) {
+      return res.status(400).json({ error: "Malware detected" });
     }
 
-    filePath = req.file.path;
+    // 2️⃣ Read file
+    const buffer = fs.readFileSync(req.file.path);
 
-    // 🦠 SCAN FILE
-    await scanFile(filePath);
+    const { logEvent } = require("../services/audit.service");
 
-    // continue encryption + storage logic here
-    // encrypt → upload → delete temp file
+    // 3️⃣ Hash
+    const hash = sha256(buffer);
 
-    // ✅ async + safe cleanup
-    fs.promises.unlink(filePath).catch(() => {});
+    // 4️⃣ Encrypt
+    const { encrypted, iv, algorithm } = encryptBuffer(buffer);
 
-    res.json({
-      success: true,
-      fileId: "generated-id"
+    // 5️⃣ Cleanup temp file
+    fs.unlinkSync(req.file.path);
+
+    // 6️⃣ Prepare storage
+    const fileId = uuidv4();
+    const userId = req.user.uid; // will come from auth later
+    const storagePath = `${userId}/${fileId}.enc`;
+
+    // 7️⃣ Upload encrypted file
+    await uploadEncryptedFile(encrypted, storagePath);
+
+    // 8️⃣ Save metadata
+    await db.collection("files").doc(fileId).set({
+      fileId,
+      owner: userId,
+      originalName: req.file.originalname,
+      storagePath,
+      mimeType: req.file.mimetype,
+      hash,
+      iv,
+      algorithm,
+      size: req.file.size,
+      createdAt: new Date()
+    });
+    
+
+    // after Firestore metadata save
+    await logEvent({
+      userId: req.user.uid,      // ✅ FIX
+      action: "UPLOAD",
+      fileId,
+      fileName: req.file.originalname,
+      req
+    });
+
+
+    return res.json({
+      message: "File securely stored ✅",
+      fileId
     });
 
   } catch (err) {
-    console.error("Upload error:", err.message);
+    await logEvent({
+      userId: req.user.uid,      // ✅ FIX
+      action: "FAILED_UPLOAD",
+      fileName: req.file.originalname,
+      req
+    });
 
-    // ✅ safe cleanup if scan fails
-    if (filePath && fs.existsSync(filePath)) {
-      fs.promises.unlink(filePath).catch(() => {});
-    }
-
-    res.status(400).json({
-      error: err.message || "File upload failed"
+    console.error(err);
+    return res.status(500).json({
+      error: "File storage failed"
     });
   }
+  
 };
